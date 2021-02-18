@@ -16,5 +16,3 @@ jobs:
           owner: conwetlab
           base: develop
           head: develop
-          auto_approve: true
-          personal_token: ${{ secrets.PERSONAL_TOKEN }}
