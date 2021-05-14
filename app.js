@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /*
  *     Copyright (c) 2013-2017 CoNWeT Lab - Universidad Politécnica de Madrid
+ *     Copyright (c) 2018-2021 Future Internet Consulting and Development Solutions S.L.
  *
  *     This file is part of ngsi-proxy.
  *
@@ -40,14 +41,15 @@
  * Module dependencies.
  */
 
-var compression = require('compression'),
+"use strict";
+
+const compression = require('compression'),
     errorhandler = require('errorhandler'),
     express = require('express'),
     logic = require('./logic'),
-    path = require('path'),
     morgan = require('morgan');
 
-var app = express();
+const app = express();
 
 // Configure Express
 app.set('port', process.env.PORT || 3000);
@@ -59,8 +61,8 @@ app.use(morgan('combined'));
 app.use(compression());
 
 // Support development mode
-var env = process.env.NODE_ENV || 'development';
-if ('development' == env) {
+const env = process.env.NODE_ENV || 'development';
+if ('development' === env) {
     app.use(errorhandler());
 }
 
@@ -77,7 +79,18 @@ app.options('/callbacks/:id', logic.options_callback_entry);
 app.delete('/callbacks/:id', logic.delete_callback);
 
 if (require.main === module) {
-    app.listen(app.get('port'), function() {
+    let HEARTBEAT_INTERVAL = Number(process.env.HEARTBEAT_INTERVAL);
+
+    if (Number.isNaN(HEARTBEAT_INTERVAL)) {
+        // Defaults to 30s
+        HEARTBEAT_INTERVAL = 30 * 1000;
+    } else if (HEARTBEAT_INTERVAL <= 2000) {
+        // Minimum interval is 2s
+        HEARTBEAT_INTERVAL = 2000;
+    }
+    setInterval(logic.heartbeat, HEARTBEAT_INTERVAL);
+
+    app.listen(app.get('port'), () => {
         console.log("ngsi-proxy server listening on port " + app.get('port'));
     });
 } else {
